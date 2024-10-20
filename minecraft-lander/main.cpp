@@ -1,18 +1,9 @@
-/**
- * @file main.cpp
- * @author Sebastián Romero Cruz (src402@nyu.edu)
- * @brief A simple program that creates a window with OpenGL context and
- * renders a colored triangle. This program demonstrates basic usage of SDL to
- * create a window, create an OpenGL context, and render a simple colored
- * triangle using shaders.
- * @version 0.1
- * @date 2024-05-20
- *
- * @copyright Copyright NYU Tandon School of Engineering (c) 2024
- *
- */
 #define GL_SILENCE_DEPRECATION
+#define STB_IMAGE_IMPLEMENTATION
+#define LOG(argument) std::cout << argument << '\n'
 #define GL_GLEXT_PROTOTYPES 1
+#define FIXED_TIMESTEP 0.0166666f
+#define PLATFORM_COUNT 10
 
 #ifdef _WINDOWS
 #include <GL/glew.h>
@@ -20,65 +11,112 @@
 
 #include <SDL.h>
 #include <SDL_opengl.h>
-#include "glm/mat4x4.hpp"                // 4x4 Matrix
-#include "glm/gtc/matrix_transform.hpp"  // Matrix transformation methods
-#include "ShaderProgram.h"               // We'll talk about these later in the course
+#include <SDL_mixer.h>
+#include "glm/mat4x4.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "ShaderProgram.h"
+#include "stb_image.h"
+#include "cmath"
+#include <ctime>
+#include <vector>
+#include <cstdlib>
+#include "Entity.h"
 
-enum AppStatus { RUNNING, TERMINATED };
+// ––––– STRUCTS AND ENUMS ––––– //
+struct GameState
+{
+    Entity* player;
+    Entity* platforms;
+};
 
-// Our window dimensions
-constexpr int WINDOW_WIDTH = 640,
-WINDOW_HEIGHT = 480;
+// ––––– CONSTANTS ––––– //
+constexpr int WINDOW_WIDTH = 640 * 1.7,
+WINDOW_HEIGHT = 480 * 1.7;
 
-// Background color components
 constexpr float BG_RED = 0.1922f,
 BG_BLUE = 0.549f,
 BG_GREEN = 0.9059f,
 BG_OPACITY = 1.0f;
 
-// Our viewport—or our "camera"'s—position and dimensions
 constexpr int VIEWPORT_X = 0,
 VIEWPORT_Y = 0,
 VIEWPORT_WIDTH = WINDOW_WIDTH,
 VIEWPORT_HEIGHT = WINDOW_HEIGHT;
 
-// Our shader filepaths; these are necessary for a number of things
-// Not least, to actually draw our shapes 
-// We'll have a whole lecture on these later
-constexpr char V_SHADER_PATH[] = "shaders/vertex.glsl",
-F_SHADER_PATH[] = "shaders/fragment.glsl";
+constexpr char V_SHADER_PATH[] = "shaders/vertex_textured.glsl",
+F_SHADER_PATH[] = "shaders/fragment_textured.glsl";
 
-// Our object's fill colour
-constexpr float TRIANGLE_RED = 1.0,
-TRIANGLE_BLUE = 0.4,
-TRIANGLE_GREEN = 0.4,
-TRIANGLE_OPACITY = 1.0;
+constexpr float MILLISECONDS_IN_SECOND = 1000.0;
+constexpr char SPRITESHEET_FILEPATH[] = "assets/george_0.png";
+constexpr char PLATFORM_FILEPATH[] = "assets/platformPack_tile027.png";
 
-AppStatus g_app_status = RUNNING;
+constexpr int NUMBER_OF_TEXTURES = 1;
+constexpr GLint LEVEL_OF_DETAIL = 0;
+constexpr GLint TEXTURE_BORDER = 0;
+
+constexpr int CD_QUAL_FREQ = 44100,
+AUDIO_CHAN_AMT = 2,     // stereo
+AUDIO_BUFF_SIZE = 4096;
+
+constexpr char BGM_FILEPATH[] = "assets/crypto.mp3",
+SFX_FILEPATH[] = "assets/bounce.wav";
+
+constexpr int PLAY_ONCE = 0,    // play once, loop never
+NEXT_CHNL = -1,   // next available channel
+ALL_SFX_CHNL = -1;
+
+
+Mix_Music* g_music;
+Mix_Chunk* g_jump_sfx;
+
+// ––––– GLOBAL VARIABLES ––––– //
+GameState g_state;
+
 SDL_Window* g_display_window;
+bool g_game_is_running = true;
 
-ShaderProgram g_shader_program;
+ShaderProgram g_program;
+glm::mat4 g_view_matrix, g_projection_matrix;
 
-glm::mat4 g_view_matrix,        // Defines the position (location and orientation) of the camera
-g_model_matrix,       // Defines every translation, rotation, and/or scaling applied to an object; we'll look at these next week
-g_projection_matrix;  // Defines the characteristics of your camera, such as clip panes, field of view, projection method, etc.
+float g_previous_ticks = 0.0f;
+float g_accumulator = 0.0f;
+
+// ––––– GENERAL FUNCTIONS ––––– //
+GLuint load_texture(const char* filepath)
+{
+    int width, height, number_of_components;
+    unsigned char* image = stbi_load(filepath, &width, &height, &number_of_components, STBI_rgb_alpha);
+
+    if (image == NULL)
+    {
+        LOG("Unable to load image. Make sure the path is correct.");
+        assert(false);
+    }
+
+    GLuint textureID;
+    glGenTextures(NUMBER_OF_TEXTURES, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glTexImage2D(GL_TEXTURE_2D, LEVEL_OF_DETAIL, GL_RGBA, width, height, TEXTURE_BORDER, GL_RGBA, GL_UNSIGNED_BYTE, image);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    stbi_image_free(image);
+
+    return textureID;
+}
 
 void initialise()
 {
-    SDL_Init(SDL_INIT_VIDEO);
-    g_display_window = SDL_CreateWindow("Hello, Triangle!",
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+    g_display_window = SDL_CreateWindow("ender dragon docker",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH, WINDOW_HEIGHT,
         SDL_WINDOW_OPENGL);
-
-    if (g_display_window == nullptr)
-    {
-        std::cerr << "ERROR: SDL Window could not be created.\n";
-        g_app_status = TERMINATED;
-
-        SDL_Quit();
-        exit(1);
-    }
 
     SDL_GLContext context = SDL_GL_CreateContext(g_display_window);
     SDL_GL_MakeCurrent(g_display_window, context);
@@ -87,80 +125,216 @@ void initialise()
     glewInit();
 #endif
 
-    // Initialise our camera
+    // ––––– VIDEO ––––– //
     glViewport(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
 
-    // Load up our shaders
-    g_shader_program.load(V_SHADER_PATH, F_SHADER_PATH);
+    g_program.load(V_SHADER_PATH, F_SHADER_PATH);
 
-    // Initialise our view, model, and projection matrices
-    g_view_matrix = glm::mat4(1.0f);  // Defines the position (location and orientation) of the camera
-    g_model_matrix = glm::mat4(1.0f);  // Defines every translation, rotations, or scaling applied to an object
-    g_projection_matrix = glm::ortho(-5.0f, 5.0f, -3.75f, 3.75f, -1.0f, 1.0f);  // Defines the characteristics of your camera, such as clip planes, field of view, projection method etc.
+    g_view_matrix = glm::mat4(1.0f);
+    g_projection_matrix = glm::ortho(-5.0f, 5.0f, -3.75f, 3.75f, -1.0f, 1.0f);
 
-    g_shader_program.set_projection_matrix(g_projection_matrix);
-    g_shader_program.set_view_matrix(g_view_matrix);
-    // Notice we haven't set our model matrix yet!
+    g_program.set_projection_matrix(g_projection_matrix);
+    g_program.set_view_matrix(g_view_matrix);
 
-    g_shader_program.set_colour(TRIANGLE_RED, TRIANGLE_BLUE, TRIANGLE_GREEN, TRIANGLE_OPACITY);
-
-    // Each object has its own unique ID
-    glUseProgram(g_shader_program.get_program_id());
+    glUseProgram(g_program.get_program_id());
 
     glClearColor(BG_RED, BG_BLUE, BG_GREEN, BG_OPACITY);
+
+    // ––––– BGM ––––– //
+    Mix_OpenAudio(CD_QUAL_FREQ, MIX_DEFAULT_FORMAT, AUDIO_CHAN_AMT, AUDIO_BUFF_SIZE);
+
+    // STEP 1: Have openGL generate a pointer to your music file
+    g_music = Mix_LoadMUS(BGM_FILEPATH); // works only with mp3 files
+
+    // STEP 2: Play music
+    Mix_PlayMusic(
+        g_music,  // music file
+        -1        // -1 means loop forever; 0 means play once, look never
+    );
+
+    // STEP 3: Set initial volume
+    Mix_VolumeMusic(MIX_MAX_VOLUME / 2.0);
+
+    // ––––– SFX ––––– //
+    g_jump_sfx = Mix_LoadWAV(SFX_FILEPATH);
+
+    // ––––– PLATFORMS ––––– //
+    GLuint platform_texture_id = load_texture(PLATFORM_FILEPATH);
+
+    g_state.platforms = new Entity[PLATFORM_COUNT];
+
+    // Set the type of every platform entity to PLATFORM
+    for (int i = 0; i < PLATFORM_COUNT; i++)
+    {
+        g_state.platforms[i].set_texture_id(platform_texture_id);
+        g_state.platforms[i].set_position(glm::vec3(i - PLATFORM_COUNT / 2.0f, -3.0f, 0.0f));
+        g_state.platforms[i].set_width(0.8f);
+        g_state.platforms[i].set_height(1.0f);
+        g_state.platforms[i].set_entity_type(PLATFORM);
+        g_state.platforms[i].update(0.0f, NULL, NULL, 0);
+    }
+
+
+    // ––––– PLAYER (GEORGE) ––––– //
+    GLuint player_texture_id = load_texture(SPRITESHEET_FILEPATH);
+
+    int player_walking_animation[4][4] =
+    {
+        { 1, 5, 9, 13 },  // for George to move to the left,
+        { 3, 7, 11, 15 }, // for George to move to the right,
+        { 2, 6, 10, 14 }, // for George to move upwards,
+        { 0, 4, 8, 12 }   // for George to move downwards
+    };
+
+    glm::vec3 acceleration = glm::vec3(0.0f, -4.905f, 0.0f);
+
+    g_state.player = new Entity(
+        player_texture_id,         // texture id
+        5.0f,                      // speed
+        acceleration,              // acceleration
+        3.0f,                      // jumping power
+        player_walking_animation,  // animation index sets
+        0.0f,                      // animation time
+        4,                         // animation frame amount
+        0,                         // current animation index
+        4,                         // animation column amount
+        4,                         // animation row amount
+        1.0f,                      // width
+        1.0f,                       // height
+        PLAYER
+    );
+
+
+    // Jumping
+    g_state.player->set_jumping_power(3.0f);
+
+    // ––––– GENERAL ––––– //
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // TODO! remove this to enable music
+    Mix_HaltMusic();
+
 }
 
 void process_input()
 {
+    g_state.player->set_movement(glm::vec3(0.0f));
+
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
-        if (event.type == SDL_QUIT || event.type == SDL_WINDOWEVENT_CLOSE)
-        {
-            g_app_status = TERMINATED;
+        switch (event.type) {
+            // End game
+        case SDL_QUIT:
+        case SDL_WINDOWEVENT_CLOSE:
+            g_game_is_running = false;
+            break;
+
+        case SDL_KEYDOWN:
+            switch (event.key.keysym.sym) {
+            case SDLK_q:
+                // Quit the game with a keystroke
+                g_game_is_running = false;
+                break;
+
+            case SDLK_SPACE:
+                // Jump
+                if (g_state.player->get_collided_bottom())
+                {
+                    g_state.player->jump();
+                    Mix_PlayChannel(NEXT_CHNL, g_jump_sfx, 0);
+                }
+                break;
+
+            case SDLK_h:
+                // Stop music
+                Mix_HaltMusic();
+                break;
+
+            case SDLK_p:
+                Mix_PlayMusic(g_music, -1);
+
+            default:
+                break;
+            }
+
+        default:
+            break;
         }
+    }
+
+    const Uint8* key_state = SDL_GetKeyboardState(NULL);
+
+    if (key_state[SDL_SCANCODE_LEFT])
+    {
+        g_state.player->move_left();
+    }
+    else if (key_state[SDL_SCANCODE_RIGHT])
+    {
+        g_state.player->move_right();
+    }
+
+    if (glm::length(g_state.player->get_movement()) > 1.0f)
+    {
+        g_state.player->normalise_movement();
     }
 }
 
-void update() { }
+void update()
+{
+    float ticks = (float)SDL_GetTicks() / MILLISECONDS_IN_SECOND;
+    float delta_time = ticks - g_previous_ticks;
+    g_previous_ticks = ticks;
 
-void render() {
+    delta_time += g_accumulator;
+
+    if (delta_time < FIXED_TIMESTEP)
+    {
+        g_accumulator = delta_time;
+        return;
+    }
+
+    while (delta_time >= FIXED_TIMESTEP)
+    {
+        g_state.player->update(FIXED_TIMESTEP, NULL, g_state.platforms, PLATFORM_COUNT);
+        delta_time -= FIXED_TIMESTEP;
+    }
+
+    g_accumulator = delta_time;
+}
+
+void render()
+{
     glClear(GL_COLOR_BUFFER_BIT);
 
-    g_shader_program.set_model_matrix(g_model_matrix);
+    g_state.player->render(&g_program);
 
-    float vertices[] =
-    {
-         0.5f, -0.5f,
-         0.0f,  0.5f,
-        -0.5f, -0.5f
-    };
-
-    glVertexAttribPointer(g_shader_program.get_position_attribute(), 2, GL_FLOAT, false, 0, vertices);
-    glEnableVertexAttribArray(g_shader_program.get_position_attribute());
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    glDisableVertexAttribArray(g_shader_program.get_position_attribute());
+    for (int i = 0; i < PLATFORM_COUNT; i++) g_state.platforms[i].render(&g_program);
 
     SDL_GL_SwapWindow(g_display_window);
 }
 
-void shutdown() { SDL_Quit(); }
+void shutdown()
+{
+    SDL_Quit();
 
-/**
- Start here—we can see the general structure of a game loop without worrying too much about the details yet.
- */
+    delete[] g_state.platforms;
+    delete g_state.player;
+}
+
+// ––––– GAME LOOP ––––– //
 int main(int argc, char* argv[])
 {
-    // Initialise our program—whatever that means
     initialise();
 
-    while (g_app_status == RUNNING)
+    while (g_game_is_running)
     {
-        process_input();  // If the player did anything—press a button, move the joystick—process it
-        update();         // Using the game's previous state, and whatever new input we have, update the game's state
-        render();         // Once updated, render those changes onto the screen
+        process_input();
+        update();
+        render();
     }
 
-    shutdown();  // The game is over, so let's perform any shutdown protocols
+    shutdown();
     return 0;
 }

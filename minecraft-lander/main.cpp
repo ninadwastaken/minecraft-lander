@@ -338,6 +338,14 @@ void update()
 
     g_game_result = g_state.player->get_game_result();
 
+    if (g_game_result == WON) {
+        // TODO! make game ending screens and implement them
+
+    }
+    else if (g_game_result == LOST) {
+        // TODO! make game ending screens and implement them
+
+    } 
 }
 
 void render()

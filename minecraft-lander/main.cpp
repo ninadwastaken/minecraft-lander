@@ -219,7 +219,7 @@ void initialise()
 
 void process_input()
 {
-    g_state.player->set_movement(glm::vec3(0.0f));
+    //g_state.player->set_movement(glm::vec3(0.0f));
 
     SDL_Event event;
     while (SDL_PollEvent(&event))
@@ -238,14 +238,14 @@ void process_input()
                 g_game_is_running = false;
                 break;
 
-            case SDLK_SPACE:
-                // Jump
-                if (g_state.player->get_collided_bottom())
-                {
-                    g_state.player->jump();
-                    Mix_PlayChannel(NEXT_CHNL, g_jump_sfx, 0);
-                }
-                break;
+            //case SDLK_SPACE:
+            //    // Jump
+            //    if (g_state.player->get_collided_bottom())
+            //    {
+            //        g_state.player->jump();
+            //        Mix_PlayChannel(NEXT_CHNL, g_jump_sfx, 0);
+            //    }
+            //    break;
 
             case SDLK_h:
                 // Stop music
@@ -266,13 +266,31 @@ void process_input()
 
     const Uint8* key_state = SDL_GetKeyboardState(NULL);
 
-    if (key_state[SDL_SCANCODE_LEFT])
+    if (key_state[SDL_SCANCODE_LEFT] && key_state[SDL_SCANCODE_RIGHT])
     {
-        g_state.player->move_left();
+        g_state.player->dont_accelerate_horizontal();
+    }
+    else if (key_state[SDL_SCANCODE_LEFT])
+    {
+        g_state.player->accelerate_left();
     }
     else if (key_state[SDL_SCANCODE_RIGHT])
     {
-        g_state.player->move_right();
+        g_state.player->accelerate_right();
+    }
+    else if (!key_state[SDL_SCANCODE_RIGHT] && !key_state[SDL_SCANCODE_LEFT])
+    {
+        g_state.player->dont_accelerate_horizontal();
+
+    }
+
+    if (key_state[SDL_SCANCODE_UP])
+    {
+        g_state.player->accelerate_up();
+    }
+    else if (!key_state[SDL_SCANCODE_UP])
+    {
+        g_state.player->dont_accelerate_up();
     }
 
     if (glm::length(g_state.player->get_movement()) > 1.0f)

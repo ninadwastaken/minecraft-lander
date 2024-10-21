@@ -92,6 +92,12 @@ public:
     void move_up() { m_movement.y = 1.0f;  face_up(); }
     void move_down() { m_movement.y = -1.0f; face_down(); }
 
+    void accelerate_left() { m_acceleration.x = -0.3f; }
+    void accelerate_right() { m_acceleration.x = 0.3f; }
+    void dont_accelerate_horizontal() { m_acceleration.x = 0.0f; }
+    void accelerate_up() { m_acceleration.y = 0.3f; }
+    void dont_accelerate_up() { m_acceleration.y = -0.2f; }
+
     void const jump() { m_is_jumping = true; }
 
     // ————— GETTERS ————— //

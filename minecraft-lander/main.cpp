@@ -82,7 +82,11 @@ glm::mat4 g_view_matrix, g_projection_matrix;
 float g_previous_ticks = 0.0f;
 float g_accumulator = 0.0f;
 
+GameResult g_game_result = PLAYING;
+
 // ––––– GENERAL FUNCTIONS ––––– //
+
+
 GLuint load_texture(const char* filepath)
 {
     int width, height, number_of_components;
@@ -326,15 +330,14 @@ void update()
 
     while (delta_time >= FIXED_TIMESTEP)
     {
-        collided_with = g_state.player->update(FIXED_TIMESTEP, NULL, g_state.platforms, PLATFORM_COUNT);
+        g_state.player->update(FIXED_TIMESTEP, NULL, g_state.platforms, PLATFORM_COUNT);
         delta_time -= FIXED_TIMESTEP;
     }
 
     g_accumulator = delta_time;
 
-    if (collided_with != NONE_ENTITY) {
-        g_game_is_running = false;
-    }
+    g_game_result = g_state.player->get_game_result();
+
 }
 
 void render()

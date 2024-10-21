@@ -63,7 +63,7 @@ Entity::Entity()
     : m_position(0.0f), m_movement(0.0f), m_scale(1.0f, 1.0f, 0.0f), m_model_matrix(1.0f),
     m_speed(0.0f), m_animation_cols(0), m_animation_frames(0), m_animation_index(0),
     m_animation_rows(0), m_animation_indices(nullptr), m_animation_time(0.0f),
-    m_texture_id(0), m_velocity(0.0f), m_acceleration(0.0f), m_width(0.0f), m_height(0.0f)
+    m_texture_id(0), m_velocity(0.0f), m_acceleration(0.0f), m_width(0.0f), m_height(0.0f), m_game_result(PLAYING)
 {
     // Initialize m_walking with zeros or any default value
     for (int i = 0; i < SECONDS_PER_FRAME; ++i)
@@ -79,7 +79,7 @@ Entity::Entity(GLuint texture_id, float speed, glm::vec3 acceleration, float jum
     m_animation_frames(animation_frames), m_animation_index(animation_index),
     m_animation_rows(animation_rows), m_animation_indices(nullptr),
     m_animation_time(animation_time), m_texture_id(texture_id), m_velocity(0.0f),
-    m_width(width), m_height(height), m_entity_type(EntityType)
+    m_width(width), m_height(height), m_entity_type(EntityType), m_game_result(PLAYING)
 {
     face_right();
     set_walking(walking);
@@ -90,7 +90,7 @@ Entity::Entity(GLuint texture_id, float speed, float width, float height, Entity
     : m_position(0.0f), m_movement(0.0f), m_scale(1.0f, 1.0f, 0.0f), m_model_matrix(1.0f),
     m_speed(speed), m_animation_cols(0), m_animation_frames(0), m_animation_index(0),
     m_animation_rows(0), m_animation_indices(nullptr), m_animation_time(0.0f),
-    m_texture_id(texture_id), m_velocity(0.0f), m_acceleration(0.0f), m_width(width), m_height(height), m_entity_type(EntityType)
+    m_texture_id(texture_id), m_velocity(0.0f), m_acceleration(0.0f), m_width(width), m_height(height), m_entity_type(EntityType), m_game_result(PLAYING)
 {
     // Initialize m_walking with zeros or any default value
     for (int i = 0; i < SECONDS_PER_FRAME; ++i)
@@ -99,7 +99,7 @@ Entity::Entity(GLuint texture_id, float speed, float width, float height, Entity
 Entity::Entity(GLuint texture_id, float speed, float width, float height, EntityType EntityType, AIType AIType, AIState AIState) : m_position(0.0f), m_movement(0.0f), m_scale(1.0f, 1.0f, 0.0f), m_model_matrix(1.0f),
 m_speed(speed), m_animation_cols(0), m_animation_frames(0), m_animation_index(0),
 m_animation_rows(0), m_animation_indices(nullptr), m_animation_time(0.0f),
-m_texture_id(texture_id), m_velocity(0.0f), m_acceleration(0.0f), m_width(width), m_height(height), m_entity_type(EntityType), m_ai_type(AIType), m_ai_state(AIState)
+m_texture_id(texture_id), m_velocity(0.0f), m_acceleration(0.0f), m_width(width), m_height(height), m_entity_type(EntityType), m_ai_type(AIType), m_ai_state(AIState), m_game_result(PLAYING)
 {
     // Initialize m_walking with zeros or any default value
     for (int i = 0; i < SECONDS_PER_FRAME; ++i)
@@ -160,7 +160,7 @@ bool const Entity::check_collision(Entity* other) const
     return x_distance < 0.0f && y_distance < 0.0f;
 }
 
-EntityType const Entity::check_collision_y(Entity* collidable_entities, int collidable_entity_count)
+void const Entity::check_collision_y(Entity* collidable_entities, int collidable_entity_count)
 {
     for (int i = 0; i < collidable_entity_count; i++)
     {
@@ -189,13 +189,17 @@ EntityType const Entity::check_collision_y(Entity* collidable_entities, int coll
         }
 
         if (m_collided_bottom && m_entity_type == PLAYER) {
-            return collidable_entity->m_entity_type;
+            if (collidable_entity->m_entity_type == PLATFORM) {
+                m_game_result = LOST;
+            }
+            else if (collidable_entity->m_entity_type == TARGET) {
+                m_game_result = WON;
+            }
         }
     }
-    return NONE_ENTITY;
 }
 
-EntityType const Entity::check_collision_x(Entity* collidable_entities, int collidable_entity_count)
+void const Entity::check_collision_x(Entity* collidable_entities, int collidable_entity_count)
 {
     for (int i = 0; i < collidable_entity_count; i++)
     {
@@ -224,11 +228,10 @@ EntityType const Entity::check_collision_x(Entity* collidable_entities, int coll
             }
         }
     }
-    return NONE_ENTITY;
 }
-EntityType Entity::update(float delta_time, Entity* player, Entity* collidable_entities, int collidable_entity_count)
+void Entity::update(float delta_time, Entity* player, Entity* collidable_entities, int collidable_entity_count)
 {
-    if (!m_is_active) return NONE_ENTITY;
+    if (!m_is_active) return;
 
     m_collided_top = false;
     m_collided_bottom = false;
@@ -261,7 +264,7 @@ EntityType Entity::update(float delta_time, Entity* player, Entity* collidable_e
     m_velocity += m_acceleration * delta_time;
 
     m_position.y += m_velocity.y * delta_time;
-    EntityType collided_with = check_collision_y(collidable_entities, collidable_entity_count);
+    check_collision_y(collidable_entities, collidable_entity_count);
 
     m_position.x += m_velocity.x * delta_time;
     check_collision_x(collidable_entities, collidable_entity_count);
@@ -274,10 +277,6 @@ EntityType Entity::update(float delta_time, Entity* player, Entity* collidable_e
             m_position.x = horizontal_boundary;
         }
     }
-
-    return collided_with;
-
-    
 
     if (m_is_jumping)
     {

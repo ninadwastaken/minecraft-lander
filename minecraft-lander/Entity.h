@@ -6,7 +6,7 @@
 enum EntityType { PLATFORM, PLAYER, ENEMY, TARGET, NONE_ENTITY };
 enum AIType { WALKER, GUARD };
 enum AIState { WALKING, IDLE, ATTACKING };
-
+enum GameResult { PLAYING, WON, LOST };
 
 enum AnimationDirection { LEFT, RIGHT, UP, DOWN };
 
@@ -21,6 +21,8 @@ private:
     EntityType m_entity_type;
     AIType     m_ai_type;
     AIState    m_ai_state;
+    GameResult m_game_result;
+
     // ————— TRANSFORMATIONS ————— //
     glm::vec3 m_movement;
     glm::vec3 m_position;
@@ -71,9 +73,9 @@ public:
     void draw_sprite_from_texture_atlas(ShaderProgram* program, GLuint texture_id, int index);
     bool const check_collision(Entity* other) const;
 
-    EntityType const check_collision_y(Entity* collidable_entities, int collidable_entity_count);
-    EntityType const check_collision_x(Entity* collidable_entities, int collidable_entity_count);
-    EntityType update(float delta_time, Entity* player, Entity* collidable_entities, int collidable_entity_count);
+    void const check_collision_y(Entity* collidable_entities, int collidable_entity_count);
+    void const check_collision_x(Entity* collidable_entities, int collidable_entity_count);
+    void update(float delta_time, Entity* player, Entity* collidable_entities, int collidable_entity_count);
     void render(ShaderProgram* program);
 
     void ai_activate(Entity* player);
@@ -117,6 +119,7 @@ public:
     bool      const get_collided_left() const { return m_collided_left; }
     float get_width() const { return m_width; }
     float get_height() const { return m_height; }
+    GameResult get_game_result() const { return m_game_result; }
 
     void activate() { m_is_active = true; };
     void deactivate() { m_is_active = false; };

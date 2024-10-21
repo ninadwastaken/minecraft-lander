@@ -49,6 +49,7 @@ F_SHADER_PATH[] = "shaders/fragment_textured.glsl";
 constexpr float MILLISECONDS_IN_SECOND = 1000.0;
 constexpr char SPRITESHEET_FILEPATH[] = "assets/dragon.png";
 constexpr char PLATFORM_FILEPATH[] = "assets/endstone.png";
+constexpr char TARGET_FILEPATH[] = "assets/bedrock.png";
 
 constexpr int NUMBER_OF_TEXTURES = 1;
 constexpr GLint LEVEL_OF_DETAIL = 0;
@@ -112,6 +113,9 @@ GLuint load_texture(const char* filepath)
 
 void initialise()
 {
+
+    srand(time(0));
+
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     g_display_window = SDL_CreateWindow("ender dragon docker",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -160,6 +164,7 @@ void initialise()
 
     // ––––– PLATFORMS ––––– //
     GLuint platform_texture_id = load_texture(PLATFORM_FILEPATH);
+    GLuint target_texture_id = load_texture(TARGET_FILEPATH);
 
     g_state.platforms = new Entity[PLATFORM_COUNT];
 
@@ -167,12 +172,18 @@ void initialise()
     for (int i = 0; i < PLATFORM_COUNT; i++)
     {
         g_state.platforms[i].set_texture_id(platform_texture_id);
-        g_state.platforms[i].set_position(glm::vec3(i - PLATFORM_COUNT / 2.0f, -3.0f, 0.0f));
+        g_state.platforms[i].set_position(glm::vec3(i - PLATFORM_COUNT / 2.0f + 0.5f, -3.0f, 0.0f));
         g_state.platforms[i].set_width(0.8f);
         g_state.platforms[i].set_height(1.0f);
         g_state.platforms[i].set_entity_type(PLATFORM);
         g_state.platforms[i].update(0.0f, NULL, NULL, 0);
     }
+
+    int TARGET_PLATFORM = rand() % PLATFORM_COUNT;
+
+    g_state.platforms[TARGET_PLATFORM].set_entity_type(TARGET);
+    g_state.platforms[TARGET_PLATFORM].set_texture_id(target_texture_id);
+
 
 
     // ––––– PLAYER (GEORGE) ––––– //

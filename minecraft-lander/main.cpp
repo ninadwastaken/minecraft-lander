@@ -309,7 +309,7 @@ void process_input()
         g_state.player->normalise_movement();
     }
 }
-
+EntityType collided_with = NONE_ENTITY;
 void update()
 {
     float ticks = (float)SDL_GetTicks() / MILLISECONDS_IN_SECOND;
@@ -326,11 +326,15 @@ void update()
 
     while (delta_time >= FIXED_TIMESTEP)
     {
-        g_state.player->update(FIXED_TIMESTEP, NULL, g_state.platforms, PLATFORM_COUNT);
+        collided_with = g_state.player->update(FIXED_TIMESTEP, NULL, g_state.platforms, PLATFORM_COUNT);
         delta_time -= FIXED_TIMESTEP;
     }
 
     g_accumulator = delta_time;
+
+    if (collided_with != NONE_ENTITY) {
+        g_game_is_running = false;
+    }
 }
 
 void render()

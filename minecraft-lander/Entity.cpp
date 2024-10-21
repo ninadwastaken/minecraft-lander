@@ -160,7 +160,7 @@ bool const Entity::check_collision(Entity* other) const
     return x_distance < 0.0f && y_distance < 0.0f;
 }
 
-void const Entity::check_collision_y(Entity* collidable_entities, int collidable_entity_count)
+EntityType const Entity::check_collision_y(Entity* collidable_entities, int collidable_entity_count)
 {
     for (int i = 0; i < collidable_entity_count; i++)
     {
@@ -187,10 +187,15 @@ void const Entity::check_collision_y(Entity* collidable_entities, int collidable
                 m_collided_bottom = true;
             }
         }
+
+        if (m_collided_bottom && m_entity_type == PLAYER) {
+            return collidable_entity->m_entity_type;
+        }
     }
+    return NONE_ENTITY;
 }
 
-void const Entity::check_collision_x(Entity* collidable_entities, int collidable_entity_count)
+EntityType const Entity::check_collision_x(Entity* collidable_entities, int collidable_entity_count)
 {
     for (int i = 0; i < collidable_entity_count; i++)
     {
@@ -219,10 +224,11 @@ void const Entity::check_collision_x(Entity* collidable_entities, int collidable
             }
         }
     }
+    return NONE_ENTITY;
 }
-void Entity::update(float delta_time, Entity* player, Entity* collidable_entities, int collidable_entity_count)
+EntityType Entity::update(float delta_time, Entity* player, Entity* collidable_entities, int collidable_entity_count)
 {
-    if (!m_is_active) return;
+    if (!m_is_active) return NONE_ENTITY;
 
     m_collided_top = false;
     m_collided_bottom = false;
@@ -255,7 +261,7 @@ void Entity::update(float delta_time, Entity* player, Entity* collidable_entitie
     m_velocity += m_acceleration * delta_time;
 
     m_position.y += m_velocity.y * delta_time;
-    check_collision_y(collidable_entities, collidable_entity_count);
+    EntityType collided_with = check_collision_y(collidable_entities, collidable_entity_count);
 
     m_position.x += m_velocity.x * delta_time;
     check_collision_x(collidable_entities, collidable_entity_count);
@@ -268,6 +274,10 @@ void Entity::update(float delta_time, Entity* player, Entity* collidable_entitie
             m_position.x = horizontal_boundary;
         }
     }
+
+    return collided_with;
+
+    
 
     if (m_is_jumping)
     {

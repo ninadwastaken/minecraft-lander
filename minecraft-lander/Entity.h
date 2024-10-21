@@ -3,7 +3,7 @@
 
 #include "glm/glm.hpp"
 #include "ShaderProgram.h"
-enum EntityType { PLATFORM, PLAYER, ENEMY, TARGET };
+enum EntityType { PLATFORM, PLAYER, ENEMY, TARGET, NONE_ENTITY };
 enum AIType { WALKER, GUARD };
 enum AIState { WALKING, IDLE, ATTACKING };
 
@@ -71,9 +71,9 @@ public:
     void draw_sprite_from_texture_atlas(ShaderProgram* program, GLuint texture_id, int index);
     bool const check_collision(Entity* other) const;
 
-    void const check_collision_y(Entity* collidable_entities, int collidable_entity_count);
-    void const check_collision_x(Entity* collidable_entities, int collidable_entity_count);
-    void update(float delta_time, Entity* player, Entity* collidable_entities, int collidable_entity_count);
+    EntityType const check_collision_y(Entity* collidable_entities, int collidable_entity_count);
+    EntityType const check_collision_x(Entity* collidable_entities, int collidable_entity_count);
+    EntityType update(float delta_time, Entity* player, Entity* collidable_entities, int collidable_entity_count);
     void render(ShaderProgram* program);
 
     void ai_activate(Entity* player);

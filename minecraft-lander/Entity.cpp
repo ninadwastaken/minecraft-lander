@@ -259,6 +259,15 @@ void Entity::update(float delta_time, Entity* player, Entity* collidable_entitie
 
     m_position.x += m_velocity.x * delta_time;
     check_collision_x(collidable_entities, collidable_entity_count);
+    float horizontal_boundary = 5.4f;
+    if (m_entity_type == PLAYER) {
+        if (m_position.x > horizontal_boundary) {
+            m_position.x = -horizontal_boundary;
+        }
+        if (m_position.x < -horizontal_boundary) {
+            m_position.x = horizontal_boundary;
+        }
+    }
 
     if (m_is_jumping)
     {

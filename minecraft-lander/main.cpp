@@ -48,7 +48,7 @@ F_SHADER_PATH[] = "shaders/fragment_textured.glsl";
 
 constexpr float MILLISECONDS_IN_SECOND = 1000.0;
 constexpr char SPRITESHEET_FILEPATH[] = "assets/dragon.png";
-constexpr char PLATFORM_FILEPATH[] = "assets/platformPack_tile027.png";
+constexpr char PLATFORM_FILEPATH[] = "assets/endstone.png";
 
 constexpr int NUMBER_OF_TEXTURES = 1;
 constexpr GLint LEVEL_OF_DETAIL = 0;

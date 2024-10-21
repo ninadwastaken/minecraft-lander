@@ -47,7 +47,7 @@ constexpr char V_SHADER_PATH[] = "shaders/vertex_textured.glsl",
 F_SHADER_PATH[] = "shaders/fragment_textured.glsl";
 
 constexpr float MILLISECONDS_IN_SECOND = 1000.0;
-constexpr char SPRITESHEET_FILEPATH[] = "assets/george_0.png";
+constexpr char SPRITESHEET_FILEPATH[] = "assets/dragon.png";
 constexpr char PLATFORM_FILEPATH[] = "assets/platformPack_tile027.png";
 
 constexpr int NUMBER_OF_TEXTURES = 1;
@@ -186,7 +186,7 @@ void initialise()
         { 0, 4, 8, 12 }   // for George to move downwards
     };
 
-    glm::vec3 acceleration = glm::vec3(0.0f, -4.905f, 0.0f);
+    glm::vec3 acceleration = glm::vec3(0.0f, -0.2f, 0.0f);
 
     g_state.player = new Entity(
         player_texture_id,         // texture id
@@ -197,8 +197,8 @@ void initialise()
         0.0f,                      // animation time
         4,                         // animation frame amount
         0,                         // current animation index
-        4,                         // animation column amount
-        4,                         // animation row amount
+        1,                         // animation column amount
+        1,                         // animation row amount
         1.0f,                      // width
         1.0f,                       // height
         PLAYER

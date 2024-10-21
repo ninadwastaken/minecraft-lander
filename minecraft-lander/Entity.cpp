@@ -111,12 +111,18 @@ Entity::~Entity() { }
 void Entity::draw_sprite_from_texture_atlas(ShaderProgram* program, GLuint texture_id, int index)
 {
     // Step 1: Calculate the UV location of the indexed frame
-    float u_coord = (float)(index % m_animation_cols) / (float)m_animation_cols;
-    float v_coord = (float)(index / m_animation_cols) / (float)m_animation_rows;
+    //float u_coord = (float)(index % m_animation_cols) / (float)m_animation_cols;
+    //float v_coord = (float)(index / m_animation_cols) / (float)m_animation_rows;
+
+    float u_coord = 0.0f;
+    float v_coord = 0.0f;
 
     // Step 2: Calculate its UV size
-    float width = 1.0f / (float)m_animation_cols;
-    float height = 1.0f / (float)m_animation_rows;
+    //float width = 1.0f / (float)m_animation_cols;
+    //float height = 1.0f / (float)m_animation_rows;
+    float width = 1.0f;
+    float height = 1.0f;
+
 
     // Step 3: Just as we have done before, match the texture coordinates to the vertices
     float tex_coords[] =

@@ -198,14 +198,17 @@ void const Entity::check_collision_y(Entity* collidable_entities, int collidable
             }
         }
 
-        if (m_collided_bottom && m_entity_type == PLAYER) {
+        if ((m_collided_bottom) && m_entity_type == PLAYER) {
             if (collidable_entity->m_entity_type == TARGET) {
                 m_game_result = WON;
             }
-            else if (collidable_entity->m_entity_type == PLATFORM) {
+            if (collidable_entity->m_entity_type == PLATFORM) {
                 m_game_result = LOST;
             }
             
+        }
+        if (!m_collided_bottom) {
+            m_game_result = PLAYING;
         }
     }
 }
@@ -249,7 +252,7 @@ void Entity::update(float delta_time, Entity* player, Entity* collidable_entitie
     m_collided_left = false;
     m_collided_right = false;
 
-    if (m_entity_type == ENEMY) ai_activate(player);
+    //if (m_entity_type == ENEMY) ai_activate(player);
 
     if (m_animation_indices != NULL)
     {

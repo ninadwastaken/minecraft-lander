@@ -33,6 +33,16 @@
 #include <cstdlib>
 #include "Entity.h"
 
+
+//#include <windows.h>
+//#include <iostream>
+//
+//void DebugPrint(const std::string& message) {
+//    OutputDebugStringA(message.c_str());
+//    OutputDebugStringA("\n"); // Add newline for readability
+//}
+
+
 // ––––– STRUCTS AND ENUMS ––––– //
 struct GameState
 {
@@ -221,11 +231,11 @@ void initialise()
         g_state.platforms[i].update(0.0f, NULL, NULL, 0);
     }
 
-    int TARGET_PLATFORM = rand() % PLATFORM_COUNT;
+    int TARGET_PLATFORM = 2;
 
-    g_state.platforms[TARGET_PLATFORM].set_entity_type(TARGET);
     g_state.platforms[TARGET_PLATFORM].set_texture_id(target_texture_id);
     g_state.platforms[TARGET_PLATFORM].set_height(2.0f);
+    g_state.platforms[TARGET_PLATFORM].set_entity_type(TARGET);
 
 
 
@@ -306,9 +316,13 @@ void process_input()
                 Mix_HaltMusic();
                 break;
 
+            case SDLK_CAPSLOCK:
+                initialise();
+                break;
+
             case SDLK_p:
                 Mix_PlayMusic(g_music, -1);
-
+                break;
             default:
                 break;
             }
@@ -352,7 +366,6 @@ void process_input()
         g_state.player->normalise_movement();
     }
 }
-EntityType collided_with = NONE_ENTITY;
 void update()
 {
     float ticks = (float)SDL_GetTicks() / MILLISECONDS_IN_SECOND;
@@ -366,21 +379,23 @@ void update()
         g_accumulator = delta_time;
         return;
     }
-
+    //if (g_game_result == PLAYING) {
     while (delta_time >= FIXED_TIMESTEP)
     {
         g_state.player->update(FIXED_TIMESTEP, NULL, g_state.platforms, PLATFORM_COUNT);
         delta_time -= FIXED_TIMESTEP;
     }
+    //}
+    
 
     g_accumulator = delta_time;
-
     g_game_result = g_state.player->get_game_result();
 
 }
 
 void render()
 {
+     
     glClear(GL_COLOR_BUFFER_BIT);
     
     if (g_game_result == WON) {

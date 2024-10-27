@@ -1,4 +1,14 @@
 /**
+* Author: Ninad Moharir (bro idk i didnt even author this file)
+* Assignment: Lunar Lander
+* Date due: 2024-10-27, 11:59pm
+* I pledge that I have completed this assignment without
+* collaborating with anyone else, in conformance with the
+* NYU School of Engineering Policies and Procedures on
+* Academic Misconduct.
+**/
+
+/**
  * @file ShaderProgram.cpp
  * @author Sebastián Romero Cruz (sebastian.romerocruz@nyu.edu)
  * @brief ShaderProgram class represents an OpenGL shader program. This class

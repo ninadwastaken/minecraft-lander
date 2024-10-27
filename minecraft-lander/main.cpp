@@ -1,3 +1,14 @@
+/**
+* Author: Ninad Moharir
+* Assignment: Lunar Lander
+* Date due: 2024-10-27, 11:59pm
+* I pledge that I have completed this assignment without
+* collaborating with anyone else, in conformance with the
+* NYU School of Engineering Policies and Procedures on
+* Academic Misconduct.
+**/
+
+
 #define GL_SILENCE_DEPRECATION
 #define STB_IMAGE_IMPLEMENTATION
 #define LOG(argument) std::cout << argument << '\n'
@@ -27,6 +38,8 @@ struct GameState
 {
     Entity* player;
     Entity* platforms;
+    Entity* win_screen;
+    Entity* death_screen;
 };
 
 // ––––– CONSTANTS ––––– //
@@ -50,6 +63,8 @@ constexpr float MILLISECONDS_IN_SECOND = 1000.0;
 constexpr char SPRITESHEET_FILEPATH[] = "assets/dragon.png";
 constexpr char PLATFORM_FILEPATH[] = "assets/endstone.png";
 constexpr char TARGET_FILEPATH[] = "assets/bedrock.png";
+constexpr char WIN_SCREEN_FILEPATH[] = "assets/death_screen.png";
+constexpr char DEATH_SCREEN_FILEPATH[] = "assets/win_screen.png";
 
 constexpr int NUMBER_OF_TEXTURES = 1;
 constexpr GLint LEVEL_OF_DETAIL = 0;
@@ -166,9 +181,32 @@ void initialise()
     // ––––– SFX ––––– //
     g_jump_sfx = Mix_LoadWAV(SFX_FILEPATH);
 
+    // ----- SCREENS ---- //
+    GLuint win_screen_texture_id = load_texture(WIN_SCREEN_FILEPATH);
+    GLuint death_screen_texture_id = load_texture(DEATH_SCREEN_FILEPATH);
+
+    g_state.death_screen = new Entity(
+                                        death_screen_texture_id,         // texture id
+                                        0.0f, 
+                                        1.0f,
+                                        2.0f,
+                                        DEATH_SCREEN
+                                        
+                                    );
+
+    g_state.win_screen = new Entity(
+        win_screen_texture_id,         // texture id
+        0.0f,
+        1.0f,
+        2.0f,
+        WIN_SCREEN
+
+    );
+
     // ––––– PLATFORMS ––––– //
     GLuint platform_texture_id = load_texture(PLATFORM_FILEPATH);
     GLuint target_texture_id = load_texture(TARGET_FILEPATH);
+    
 
     g_state.platforms = new Entity[PLATFORM_COUNT];
 
@@ -338,19 +376,18 @@ void update()
 
     g_game_result = g_state.player->get_game_result();
 
-    if (g_game_result == WON) {
-        // TODO! make game ending screens and implement them
-
-    }
-    else if (g_game_result == LOST) {
-        // TODO! make game ending screens and implement them
-
-    } 
 }
 
 void render()
 {
     glClear(GL_COLOR_BUFFER_BIT);
+    
+    if (g_game_result == WON) {
+        g_state.win_screen->render(&g_program);
+    }
+    else if (g_game_result == LOST) {
+        g_state.death_screen->render(&g_program);
+    }
 
     g_state.player->render(&g_program);
 

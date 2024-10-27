@@ -75,6 +75,7 @@ constexpr char PLATFORM_FILEPATH[] = "assets/endstone.png";
 constexpr char TARGET_FILEPATH[] = "assets/bedrock.png";
 constexpr char WIN_SCREEN_FILEPATH[] = "assets/win_screen.png";
 constexpr char DEATH_SCREEN_FILEPATH[] = "assets/death_screen.png";
+constexpr char FONT_FILEPATH[] = "assets/font1.png";
 
 constexpr int NUMBER_OF_TEXTURES = 1;
 constexpr GLint LEVEL_OF_DETAIL = 0;
@@ -109,8 +110,77 @@ float g_accumulator = 0.0f;
 
 GameResult g_game_result = PLAYING;
 
+int g_fuel = 10000;
+constexpr int FONTBANK_SIZE = 16;
+GLuint g_font_texture_id;
+
 // ––––– GENERAL FUNCTIONS ––––– //
 
+
+void draw_text(ShaderProgram* program, GLuint font_texture_id, std::string text,
+    float font_size, float spacing, glm::vec3 position)
+{
+    // Scale the size of the fontbank in the UV-plane
+    // We will use this for spacing and positioning
+    float width = 1.0f / FONTBANK_SIZE;
+    float height = 1.0f / FONTBANK_SIZE;
+
+    // Instead of having a single pair of arrays, we'll have a series of pairs—one for
+    // each character. Don't forget to include <vector>!
+    std::vector<float> vertices;
+    std::vector<float> texture_coordinates;
+
+    // For every character...
+    for (int i = 0; i < text.size(); i++) {
+        // 1. Get their index in the spritesheet, as well as their offset (i.e. their
+        //    position relative to the whole sentence)
+        int spritesheet_index = (int)text[i];  // ascii value of character
+        float offset = (font_size + spacing) * i;
+
+        // 2. Using the spritesheet index, we can calculate our U- and V-coordinates
+        float u_coordinate = (float)(spritesheet_index % FONTBANK_SIZE) / FONTBANK_SIZE;
+        float v_coordinate = (float)(spritesheet_index / FONTBANK_SIZE) / FONTBANK_SIZE;
+
+        // 3. Inset the current pair in both vectors
+        vertices.insert(vertices.end(), {
+            offset + (-0.5f * font_size), 0.5f * font_size,
+            offset + (-0.5f * font_size), -0.5f * font_size,
+            offset + (0.5f * font_size), 0.5f * font_size,
+            offset + (0.5f * font_size), -0.5f * font_size,
+            offset + (0.5f * font_size), 0.5f * font_size,
+            offset + (-0.5f * font_size), -0.5f * font_size,
+            });
+
+        texture_coordinates.insert(texture_coordinates.end(), {
+            u_coordinate, v_coordinate,
+            u_coordinate, v_coordinate + height,
+            u_coordinate + width, v_coordinate,
+            u_coordinate + width, v_coordinate + height,
+            u_coordinate + width, v_coordinate,
+            u_coordinate, v_coordinate + height,
+            });
+    }
+
+    // 4. And render all of them using the pairs
+    glm::mat4 model_matrix = glm::mat4(1.0f);
+    model_matrix = glm::translate(model_matrix, position);
+
+    program->set_model_matrix(model_matrix);
+    glUseProgram(program->get_program_id());
+
+    glVertexAttribPointer(program->get_position_attribute(), 2, GL_FLOAT, false, 0,
+        vertices.data());
+    glEnableVertexAttribArray(program->get_position_attribute());
+    glVertexAttribPointer(program->get_tex_coordinate_attribute(), 2, GL_FLOAT, false, 0,
+        texture_coordinates.data());
+    glEnableVertexAttribArray(program->get_tex_coordinate_attribute());
+
+    glBindTexture(GL_TEXTURE_2D, font_texture_id);
+    glDrawArrays(GL_TRIANGLES, 0, (int)(text.size() * 6));
+
+    glDisableVertexAttribArray(program->get_position_attribute());
+    glDisableVertexAttribArray(program->get_tex_coordinate_attribute());
+}
 
 GLuint load_texture(const char* filepath)
 {
@@ -194,6 +264,7 @@ void initialise()
     // ----- SCREENS ---- //
     GLuint win_screen_texture_id = load_texture(WIN_SCREEN_FILEPATH);
     GLuint death_screen_texture_id = load_texture(DEATH_SCREEN_FILEPATH);
+    g_font_texture_id = load_texture(FONT_FILEPATH);
 
     g_state.death_screen = new Entity(
                                         death_screen_texture_id,         // texture id
@@ -334,16 +405,25 @@ void process_input()
 
     const Uint8* key_state = SDL_GetKeyboardState(NULL);
 
+    if (g_fuel <= 0) {
+        g_state.player->dont_accelerate_horizontal();
+        g_state.player->dont_accelerate_up();
+        return;
+    }
+
     if (key_state[SDL_SCANCODE_LEFT] && key_state[SDL_SCANCODE_RIGHT])
     {
+        g_fuel--;
         g_state.player->dont_accelerate_horizontal();
     }
     else if (key_state[SDL_SCANCODE_LEFT])
     {
+        g_fuel--;
         g_state.player->accelerate_left();
     }
     else if (key_state[SDL_SCANCODE_RIGHT])
     {
+        g_fuel--;
         g_state.player->accelerate_right();
     }
     else if (!key_state[SDL_SCANCODE_RIGHT] && !key_state[SDL_SCANCODE_LEFT])
@@ -354,6 +434,7 @@ void process_input()
 
     if (key_state[SDL_SCANCODE_UP])
     {
+        g_fuel--;
         g_state.player->accelerate_up();
     }
     else if (!key_state[SDL_SCANCODE_UP])
@@ -365,6 +446,8 @@ void process_input()
     {
         g_state.player->normalise_movement();
     }
+
+
 }
 void update()
 {
@@ -408,6 +491,8 @@ void render()
     g_state.player->render(&g_program);
 
     for (int i = 0; i < PLATFORM_COUNT; i++) g_state.platforms[i].render(&g_program);
+    draw_text(&g_program, g_font_texture_id, std::to_string(g_fuel / 100), 0.5f, 0.05f,
+        glm::vec3(-3.5f, 2.0f, 0.0f));
 
     SDL_GL_SwapWindow(g_display_window);
 }

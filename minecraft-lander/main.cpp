@@ -63,8 +63,8 @@ constexpr float MILLISECONDS_IN_SECOND = 1000.0;
 constexpr char SPRITESHEET_FILEPATH[] = "assets/dragon.png";
 constexpr char PLATFORM_FILEPATH[] = "assets/endstone.png";
 constexpr char TARGET_FILEPATH[] = "assets/bedrock.png";
-constexpr char WIN_SCREEN_FILEPATH[] = "assets/death_screen.png";
-constexpr char DEATH_SCREEN_FILEPATH[] = "assets/win_screen.png";
+constexpr char WIN_SCREEN_FILEPATH[] = "assets/win_screen.png";
+constexpr char DEATH_SCREEN_FILEPATH[] = "assets/death_screen.png";
 
 constexpr int NUMBER_OF_TEXTURES = 1;
 constexpr GLint LEVEL_OF_DETAIL = 0;
@@ -188,8 +188,8 @@ void initialise()
     g_state.death_screen = new Entity(
                                         death_screen_texture_id,         // texture id
                                         0.0f, 
-                                        1.0f,
-                                        2.0f,
+                                        6.0f,
+                                        15.0f,
                                         DEATH_SCREEN
                                         
                                     );
@@ -197,8 +197,8 @@ void initialise()
     g_state.win_screen = new Entity(
         win_screen_texture_id,         // texture id
         0.0f,
-        1.0f,
-        2.0f,
+        6.0f,
+        15.0f,
         WIN_SCREEN
 
     );
@@ -214,8 +214,8 @@ void initialise()
     for (int i = 0; i < PLATFORM_COUNT; i++)
     {
         g_state.platforms[i].set_texture_id(platform_texture_id);
-        g_state.platforms[i].set_position(glm::vec3(i - PLATFORM_COUNT / 2.0f + 0.5f, -3.0f, 0.0f));
-        g_state.platforms[i].set_width(0.8f);
+        g_state.platforms[i].set_position(glm::vec3(i * 1.0 - PLATFORM_COUNT / 2.0f + 0.5f, -3.2f, 0.0f));
+        g_state.platforms[i].set_width(0.9f);
         g_state.platforms[i].set_height(1.0f);
         g_state.platforms[i].set_entity_type(PLATFORM);
         g_state.platforms[i].update(0.0f, NULL, NULL, 0);
@@ -225,6 +225,7 @@ void initialise()
 
     g_state.platforms[TARGET_PLATFORM].set_entity_type(TARGET);
     g_state.platforms[TARGET_PLATFORM].set_texture_id(target_texture_id);
+    g_state.platforms[TARGET_PLATFORM].set_height(2.0f);
 
 
 

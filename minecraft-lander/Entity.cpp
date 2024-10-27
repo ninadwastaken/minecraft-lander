@@ -199,12 +199,13 @@ void const Entity::check_collision_y(Entity* collidable_entities, int collidable
         }
 
         if (m_collided_bottom && m_entity_type == PLAYER) {
-            if (collidable_entity->m_entity_type == PLATFORM) {
-                m_game_result = LOST;
-            }
-            else if (collidable_entity->m_entity_type == TARGET) {
+            if (collidable_entity->m_entity_type == TARGET) {
                 m_game_result = WON;
             }
+            else if (collidable_entity->m_entity_type == PLATFORM) {
+                m_game_result = LOST;
+            }
+            
         }
     }
 }

@@ -207,9 +207,6 @@ void const Entity::check_collision_y(Entity* collidable_entities, int collidable
             }
             
         }
-        if (!m_collided_bottom) {
-            m_game_result = PLAYING;
-        }
     }
 }
 

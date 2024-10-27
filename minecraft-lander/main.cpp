@@ -305,7 +305,9 @@ void initialise()
     int TARGET_PLATFORM = 2;
 
     g_state.platforms[TARGET_PLATFORM].set_texture_id(target_texture_id);
-    g_state.platforms[TARGET_PLATFORM].set_height(2.0f);
+
+    // made target platform height double to check issue (still cant find it)
+    //g_state.platforms[TARGET_PLATFORM].set_height(2.0f);
     g_state.platforms[TARGET_PLATFORM].set_entity_type(TARGET);
 
 
@@ -462,13 +464,13 @@ void update()
         g_accumulator = delta_time;
         return;
     }
-    //if (g_game_result == PLAYING) {
-    while (delta_time >= FIXED_TIMESTEP)
-    {
-        g_state.player->update(FIXED_TIMESTEP, NULL, g_state.platforms, PLATFORM_COUNT);
-        delta_time -= FIXED_TIMESTEP;
+    if (g_game_result == PLAYING) {
+        while (delta_time >= FIXED_TIMESTEP)
+        {
+            g_state.player->update(FIXED_TIMESTEP, NULL, g_state.platforms, PLATFORM_COUNT);
+            delta_time -= FIXED_TIMESTEP;
+        }
     }
-    //}
     
 
     g_accumulator = delta_time;
@@ -482,18 +484,22 @@ void render()
     glClear(GL_COLOR_BUFFER_BIT);
     
     if (g_game_result == WON) {
-        g_state.win_screen->render(&g_program);
+        draw_text(&g_program, g_font_texture_id, "you won yay", 0.3f, 0.01f,
+            glm::vec3(-3.5f, 2.0f, 0.0f));
     }
     else if (g_game_result == LOST) {
-        g_state.death_screen->render(&g_program);
+        draw_text(&g_program, g_font_texture_id, "you lost lmao", 0.3f, 0.01f,
+            glm::vec3(-3.5f, 2.0f, 0.0f));
     }
 
     g_state.player->render(&g_program);
 
     for (int i = 0; i < PLATFORM_COUNT; i++) g_state.platforms[i].render(&g_program);
-    draw_text(&g_program, g_font_texture_id, std::to_string(g_fuel / 100), 0.5f, 0.05f,
-        glm::vec3(-3.5f, 2.0f, 0.0f));
-
+    if (g_game_result == PLAYING) {
+        draw_text(&g_program, g_font_texture_id, "Fuel left: " + std::to_string(g_fuel / 100), 0.3f, 0.01f,
+            glm::vec3(-3.5f, 2.0f, 0.0f));
+    }
+    
     SDL_GL_SwapWindow(g_display_window);
 }
 

@@ -48,6 +48,7 @@ struct GameState
 {
     Entity* player;
     Entity* platforms;
+    Entity* target;
     Entity* win_screen;
     Entity* death_screen;
 };
@@ -290,25 +291,39 @@ void initialise()
     
 
     g_state.platforms = new Entity[PLATFORM_COUNT];
+    int TARGET_PLATFORM = rand() % PLATFORM_COUNT;
 
     // Set the type of every platform entity to PLATFORM
     for (int i = 0; i < PLATFORM_COUNT; i++)
     {
         g_state.platforms[i].set_texture_id(platform_texture_id);
-        g_state.platforms[i].set_position(glm::vec3(i * 1.0 - PLATFORM_COUNT / 2.0f + 0.5f, -3.2f, 0.0f));
-        g_state.platforms[i].set_width(0.9f);
+        if (i >= TARGET_PLATFORM) {
+            g_state.platforms[i].set_position(glm::vec3(i * 1.0 - PLATFORM_COUNT / 2.0f + 1.4f, -3.2f, 0.0f));
+        }
+        else {
+            g_state.platforms[i].set_position(glm::vec3(i * 1.0 - PLATFORM_COUNT / 2.0f + 0.5f, -3.2f, 0.0f));
+
+        }
+        g_state.platforms[i].set_width(1.0f);
         g_state.platforms[i].set_height(1.0f);
         g_state.platforms[i].set_entity_type(PLATFORM);
         g_state.platforms[i].update(0.0f, NULL, NULL, 0);
     }
 
-    int TARGET_PLATFORM = 2;
 
-    g_state.platforms[TARGET_PLATFORM].set_texture_id(target_texture_id);
+    //g_state.platforms[TARGET_PLATFORM].set_texture_id(target_texture_id);
 
     // made target platform height double to check issue (still cant find it)
     //g_state.platforms[TARGET_PLATFORM].set_height(2.0f);
-    g_state.platforms[TARGET_PLATFORM].set_entity_type(TARGET);
+    //g_state.platforms[TARGET_PLATFORM].set_entity_type(TARGET);
+    g_state.target = new Entity();
+    g_state.target->set_texture_id(target_texture_id);
+    g_state.target->set_position(glm::vec3(TARGET_PLATFORM * 1.0 - PLATFORM_COUNT / 2.0f + 0.5f, -3.2f, 0.0f));
+    g_state.target->set_width(1.5f);
+    g_state.target->set_height(1.1f);
+    g_state.target->set_entity_type(TARGET);
+    g_state.target->update(0.0f, NULL, NULL, 0);
+
 
 
 
@@ -336,7 +351,7 @@ void initialise()
         0,                         // current animation index
         1,                         // animation column amount
         1,                         // animation row amount
-        1.0f,                      // width
+        0.01f,                      // width
         1.0f,                       // height
         PLAYER
     );
@@ -475,6 +490,9 @@ void update()
 
     g_accumulator = delta_time;
     g_game_result = g_state.player->get_game_result();
+    if (g_state.player->check_collision(g_state.target)) {
+        g_game_result = WON;
+    }
 
 }
 
@@ -495,6 +513,8 @@ void render()
     g_state.player->render(&g_program);
 
     for (int i = 0; i < PLATFORM_COUNT; i++) g_state.platforms[i].render(&g_program);
+
+    g_state.target->render(&g_program);
     if (g_game_result == PLAYING) {
         draw_text(&g_program, g_font_texture_id, "Fuel left: " + std::to_string(g_fuel / 100), 0.3f, 0.01f,
             glm::vec3(-3.5f, 2.0f, 0.0f));
